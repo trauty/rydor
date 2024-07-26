@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.23)
+cmake_minimum_required(VERSION 3.25)
 
 set(CMAKE_GENERATOR "Ninja")
 set(CMAKE_C_COMPILER "clang")
@@ -9,11 +9,12 @@ project(rydor)
 file(GLOB_RECURSE sources 
     "${CMAKE_SOURCE_DIR}/src/*.cpp"
 )
+find_package(Vulkan REQUIRED)
 
 add_executable(${PROJECT_NAME} ${sources})
 
 if(WIN32)
-	target_link_options(${PROJECT_NAME} PRIVATE ${SUBSYSTEM_LINKER_OPTIONS} -mwindows)
+	target_link_options(${PROJECT_NAME} PRIVATE ${SUBSYSTEM_LINKER_OPTIONS} -Xlinker /subsystem:windows)
 endif()
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
@@ -60,9 +61,13 @@ if(EXISTS ${TEMP_DIR})
 	file(REMOVE_RECURSE ${TEMP_DIR})
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE ${RYDOR_LIB_DIR}/SDL2/SDL2.lib ${RYDOR_LIB_DIR}/SDL2/SDL2main.lib)
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+	${RYDOR_LIB_DIR}/SDL2/SDL2main.lib
+	${RYDOR_LIB_DIR}/SDL2/SDL2.lib 
+	Vulkan::Vulkan
+)
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${RYDOR_INCLUDE_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE ${RYDOR_INCLUDE_DIR} ${Vulkan_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/src)
 
 add_custom_target(copy-shared-lib ALL 
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -71,4 +76,4 @@ add_custom_target(copy-shared-lib ALL
 	COMMENT "Copying shared libs..."
 )
 
-add_dependencies(${PROJECT_NAME} copy-shared-lib)
+#add_dependencies(${PROJECT_NAME} copy-shared-lib)
