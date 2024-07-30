@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <optional>
 #include <vector>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_vulkan.h>
@@ -26,6 +27,8 @@ void rydor_app::init_window()
 void rydor_app::init_vulkan()
 {
 	create_instance();
+	setup_debug_messenger();
+	pick_physical_device();
 }
 
 void rydor_app::create_instance()
@@ -43,19 +46,29 @@ void rydor_app::create_instance()
 	app_info.engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
 	app_info.apiVersion = VK_API_VERSION_1_0;
 
-	uint32_t extension_count = 0;
-	SDL_bool lel = SDL_Vulkan_GetInstanceExtensions(window, &extension_count, nullptr);
-	const char** extension_names = new const char* [extension_count];
-	SDL_Vulkan_GetInstanceExtensions(window, &extension_count, extension_names);
+	VkInstanceCreateInfo instance_info = {};
+	instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	instance_info.pApplicationInfo = &app_info;
+	const std::vector<const char*> sdl_extensions = get_required_extensions();
+	instance_info.enabledExtensionCount = static_cast<u32>(sdl_extensions.size());
+	instance_info.ppEnabledExtensionNames = sdl_extensions.data();
 
-	VkInstanceCreateInfo create_info = {};
-	create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	create_info.pApplicationInfo = &app_info;
-	create_info.enabledExtensionCount = extension_count;
-	create_info.ppEnabledExtensionNames = extension_names;
-	create_info.enabledLayerCount = 0;
+	VkDebugUtilsMessengerCreateInfoEXT debug_messenger_info = {};
+	if (enable_validation_layers)
+	{
+		instance_info.enabledLayerCount = static_cast<u32>(validation_layers.size());
+		instance_info.ppEnabledLayerNames = validation_layers.data();
 
-	if (vkCreateInstance(&create_info, nullptr, &instance) != VK_SUCCESS)
+		populate_debug_messenger_info(debug_messenger_info);
+		instance_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debug_messenger_info;
+	}
+	else
+	{
+		instance_info.enabledLayerCount = 0;
+		instance_info.pNext = nullptr;
+	}
+
+	if (vkCreateInstance(&instance_info, nullptr, &instance) != VK_SUCCESS)
 	{
 		throw std::runtime_error("ERROR: Failed to create a Vulkan instance!");
 	}
@@ -102,6 +115,124 @@ bool rydor_app::check_validation_layer_support()
 	return true;
 }
 
+std::vector<const char*> rydor_app::get_required_extensions()
+{
+	u32 sdl_extension_count = 0;
+	SDL_Vulkan_GetInstanceExtensions(window, &sdl_extension_count, nullptr);
+	const char** sdl_extensions = new const char* [sdl_extension_count];
+	SDL_Vulkan_GetInstanceExtensions(window, &sdl_extension_count, sdl_extensions);
+
+	std::vector<const char*> extensions(sdl_extensions, sdl_extensions + sdl_extension_count);
+
+	if (enable_validation_layers)
+	{
+		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+	}
+
+	return extensions;
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL rydor_app::debug_callback
+(
+	VkDebugUtilsMessageSeverityFlagBitsEXT msg_severity,
+	VkDebugUtilsMessageTypeFlagsEXT msg_type,
+	const VkDebugUtilsMessengerCallbackDataEXT* p_callback_data,
+	void* p_user_data
+)
+{
+	std::cerr << "Validation layer:" << p_callback_data->pMessage << "\n";
+	return VK_FALSE;
+}
+
+void rydor_app::populate_debug_messenger_info(VkDebugUtilsMessengerCreateInfoEXT& messenger_info)
+{
+	messenger_info = {};
+	messenger_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+	messenger_info.messageSeverity =
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+	messenger_info.messageType =
+		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	messenger_info.pfnUserCallback = debug_callback;
+	messenger_info.pUserData = nullptr;
+}
+
+void rydor_app::setup_debug_messenger()
+{
+	if (!enable_validation_layers) { return; }
+
+	VkDebugUtilsMessengerCreateInfoEXT messenger_info;
+	populate_debug_messenger_info(messenger_info);
+
+	if (create_debug_utils_messenger_ext(instance, &messenger_info, nullptr, &debug_messenger) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to set up the debug messenger!");
+	}
+}
+
+void rydor_app::pick_physical_device()
+{
+	u32 device_count = 0;
+	vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
+
+	if (device_count == 0)
+	{
+		throw std::runtime_error("No GPUs with Vulkan support detected!");
+	}
+
+	std::vector<VkPhysicalDevice> devices(device_count);
+	vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
+
+	for (const VkPhysicalDevice& device : devices)
+	{
+		if (is_device_suitable(device))
+		{
+			physical_device = device;
+			break;
+		}
+	}
+
+	if (physical_device == VK_NULL_HANDLE)
+	{
+		throw std::runtime_error("Selected GPU doesn't meet requirements!");
+	}
+}
+
+bool rydor_app::is_device_suitable(VkPhysicalDevice device)
+{
+	queue_family_indices indices = find_queue_families(device);
+
+	return indices.is_complete();
+}
+
+queue_family_indices rydor_app::find_queue_families(VkPhysicalDevice device)
+{
+	queue_family_indices indices = {};
+	
+	u32 queue_family_count = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
+	std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
+
+	i32 i = 0;
+	for (const VkQueueFamilyProperties& queue_family : queue_families)
+	{
+		if (queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+		{
+			indices.graphics_family = i;
+		}
+
+		if (indices.is_complete()) { break; }
+
+		i++;
+	}
+
+	return indices;
+}
+
 void rydor_app::main_loop()
 {
 	bool is_running = true;
@@ -122,8 +253,14 @@ void rydor_app::main_loop()
 
 void rydor_app::cleanup()
 {
+	if (enable_validation_layers)
+	{
+		destroy_debug_utils_messenger_ext(instance, debug_messenger, nullptr);
+	}
+
+	vkDestroyInstance(instance, nullptr);
+
 	SDL_Vulkan_UnloadLibrary();
 	SDL_DestroyWindow(window);
 	SDL_Quit();
-	vkDestroyInstance(instance, nullptr);
 }

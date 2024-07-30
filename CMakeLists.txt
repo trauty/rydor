@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.25)
 set(CMAKE_GENERATOR "Ninja")
 set(CMAKE_C_COMPILER "clang")
 set(CMAKE_CXX_COMPILER "clang++")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(rydor)
 
@@ -23,8 +25,6 @@ if(WIN32)
         LINK_FLAGS_MINSIZEREL "-Xlinker /subsystem:windows"
     )
 endif()
-
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 
 set(RYDOR_LIB_DIR ${CMAKE_SOURCE_DIR}/lib)
 set(RYDOR_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
