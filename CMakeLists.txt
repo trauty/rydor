@@ -14,7 +14,14 @@ find_package(Vulkan REQUIRED)
 add_executable(${PROJECT_NAME} ${sources})
 
 if(WIN32)
-	target_link_options(${PROJECT_NAME} PRIVATE ${SUBSYSTEM_LINKER_OPTIONS} -Xlinker /subsystem:windows)
+	target_link_options(${PROJECT_NAME} PRIVATE -mwindows)
+	set_target_properties(${PROJECT_NAME}
+		PROPERTIES
+        LINK_FLAGS_DEBUG "-Xlinker /subsystem:console"
+        LINK_FLAGS_RELEASE "-Xlinker /subsystem:windows"
+        LINK_FLAGS_RELWITHDEBINFO "-Xlinker /subsystem:windows"
+        LINK_FLAGS_MINSIZEREL "-Xlinker /subsystem:windows"
+    )
 endif()
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
@@ -44,7 +51,7 @@ if(NOT EXISTS ${RYDOR_LIB_DIR}/SDL2 OR NOT EXISTS ${RYDOR_INCLUDE_DIR}/SDL2)
 		-DSDL_DUMMYAUDIO:BOOL=0 -DSDL_OPENGL:BOOL=0 -DSDL_DUMMYVIDEO:BOOL=0 -DSDL_DISKAUDIO:BOOL=0 
 		-DSDL_STATIC:BOOL=0 -DSDL_OPENGLES:BOOL=0 -DSDL_ALTIVEC:BOOL=0 -DSDL2_DISABLE_INSTALL:BOOL=1
 		-DSDL_WASAPI:BOOL=0 -DCMAKE_BUILD_TYPE:STRING=Release -DSDL_AUDIO:BOOL=0 -DSDL_LIBUDEV:BOOL=0 
-		-DSDL_ASSERTIONS:STRING=auto -DSDL_TEST:BOOL=0
+		-DSDL_ASSERTIONS:STRING=auto -DSDL_TEST:BOOL=0 -DSDL2_NO_MWINDOWS:BOOL=1
 	)
 
 	execute_process(COMMAND ninja -C ${TEMP_DIR}/${SDL2_SRC_NAME}/build)
@@ -63,7 +70,7 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE 
 	${RYDOR_LIB_DIR}/SDL2/SDL2main.lib
-	${RYDOR_LIB_DIR}/SDL2/SDL2.lib 
+	${RYDOR_LIB_DIR}/SDL2/SDL2.lib
 	Vulkan::Vulkan
 )
 
@@ -76,4 +83,4 @@ add_custom_target(copy-shared-lib ALL
 	COMMENT "Copying shared libs..."
 )
 
-#add_dependencies(${PROJECT_NAME} copy-shared-lib)
+add_dependencies(${PROJECT_NAME} copy-shared-lib)

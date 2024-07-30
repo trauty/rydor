@@ -6,9 +6,11 @@
 #include <vector>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_vulkan.h>
+#include <SDL2/SDL_syswm.h>
 
 void rydor_app::run()
 {
+	init_window();
 	init_vulkan();
 	main_loop();
 	cleanup();
@@ -16,7 +18,7 @@ void rydor_app::run()
 
 void rydor_app::init_window()
 {
-	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_EVENTS);
+	SDL_Init(SDL_INIT_VIDEO);
 	SDL_Vulkan_LoadLibrary(nullptr);
 	window = SDL_CreateWindow("rydor", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN);
 }
@@ -28,21 +30,25 @@ void rydor_app::init_vulkan()
 
 void rydor_app::create_instance()
 {
-	VkApplicationInfo app_info{};
+	if (enable_validation_layers && !check_validation_layer_support())
+	{
+		throw std::runtime_error("ERROR: Validation layers requested but none are available!");
+	}
+
+	VkApplicationInfo app_info = {};
 	app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	app_info.pApplicationName = "rydor";
-	app_info.applicationVersion = VK_MAKE_API_VERSION(1, 0, 0, 0);
+	app_info.applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
 	app_info.pEngineName = "rydor";
-	app_info.engineVersion = VK_MAKE_API_VERSION(1, 0, 0, 0);
+	app_info.engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
 	app_info.apiVersion = VK_API_VERSION_1_0;
 
-	u32 extension_count;
-	const char** extension_names;
-	SDL_Vulkan_GetInstanceExtensions(window, &extension_count, nullptr);
-	extension_names = new const char* [extension_count];
+	uint32_t extension_count = 0;
+	SDL_bool lel = SDL_Vulkan_GetInstanceExtensions(window, &extension_count, nullptr);
+	const char** extension_names = new const char* [extension_count];
 	SDL_Vulkan_GetInstanceExtensions(window, &extension_count, extension_names);
 
-	VkInstanceCreateInfo create_info{};
+	VkInstanceCreateInfo create_info = {};
 	create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	create_info.pApplicationInfo = &app_info;
 	create_info.enabledExtensionCount = extension_count;
@@ -66,6 +72,36 @@ void rydor_app::create_instance()
 	}
 }
 
+bool rydor_app::check_validation_layer_support()
+{
+	u32 layer_count = 0;
+	vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
+
+	std::vector<VkLayerProperties> available_layers(layer_count);
+	vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data());
+	
+	for (const char* layer_name : validation_layers)
+	{
+		bool layer_found = false;
+
+		for (const VkLayerProperties& layer_properties : available_layers)
+		{
+			if (std::strcmp(layer_name, layer_properties.layerName) == 0)
+			{
+				layer_found = true;
+				break;
+			}
+		}
+
+		if (!layer_found)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 void rydor_app::main_loop()
 {
 	bool is_running = true;
@@ -86,7 +122,8 @@ void rydor_app::main_loop()
 
 void rydor_app::cleanup()
 {
-	SDL_DestroyWindow(window);
 	SDL_Vulkan_UnloadLibrary();
+	SDL_DestroyWindow(window);
 	SDL_Quit();
+	vkDestroyInstance(instance, nullptr);
 }
