@@ -12,11 +12,19 @@ struct SDL_Window;
 struct queue_family_indices
 {
 	std::optional<u32> graphics_family;
+	std::optional<u32> present_family;
 
 	bool is_complete() const
 	{
-		return graphics_family.has_value();
+		return graphics_family.has_value() && present_family.has_value();
 	};
+};
+
+struct swapchain_support_details
+{
+	VkSurfaceCapabilitiesKHR capabilities;
+	std::vector<VkSurfaceFormatKHR> formats;
+	std::vector<VkPresentModeKHR> present_modes;
 };
 
 inline VkResult create_debug_utils_messenger_ext
@@ -60,11 +68,22 @@ public:
 private:
 	SDL_Window* window = nullptr;
 	VkInstance instance;
+	VkSurfaceKHR surface;
 	VkDebugUtilsMessengerEXT debug_messenger;
 	VkPhysicalDevice physical_device = VK_NULL_HANDLE;
+	VkDevice device;
+	VkQueue present_queue;
+	VkSwapchainKHR swapchain;
+	std::vector<VkImage> swapchain_images;
+	VkFormat swapchain_image_format;
+	VkExtent2D swapchain_extent;
 
 	const std::vector<const char*> validation_layers = {
 		"VK_LAYER_KHRONOS_validation"
+	};
+
+	const std::vector<const char*> device_extensions = {
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
 
 #ifdef NDEBUG
@@ -88,9 +107,17 @@ private:
 	);
 	void populate_debug_messenger_info(VkDebugUtilsMessengerCreateInfoEXT& messenger_info);
 	void setup_debug_messenger();
+	void create_surface();
 	void pick_physical_device();
 	bool is_device_suitable(VkPhysicalDevice device);
+	bool check_device_extension_support(VkPhysicalDevice device);
 	queue_family_indices find_queue_families(VkPhysicalDevice device);
+	void create_logical_device();
+	swapchain_support_details query_swapchain_support(VkPhysicalDevice device);
+	void create_swapchain();
+	VkSurfaceFormatKHR choose_swapchain_surface_format(const std::vector<VkSurfaceFormatKHR>& available_formats);
+	VkPresentModeKHR choose_swap_present_mode(const std::vector<VkPresentModeKHR>& available_present_modes);
+	VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities);
 	void main_loop();
 	void cleanup();
 };
