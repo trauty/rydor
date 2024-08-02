@@ -8,12 +8,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(rydor)
 
-file(GLOB_RECURSE sources 
+file(GLOB_RECURSE SOURCES 
     "${CMAKE_SOURCE_DIR}/src/*.cpp"
 )
 find_package(Vulkan REQUIRED)
 
-add_executable(${PROJECT_NAME} ${sources})
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 if(WIN32)
 	target_link_options(${PROJECT_NAME} PRIVATE -mwindows)
@@ -76,6 +76,29 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${RYDOR_INCLUDE_DIR} ${Vulkan_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/src)
 
+set(SPIRV_COMPILER "$ENV{VULKAN_SDK}/Bin/glslc.exe")
+
+file(GLOB_RECURSE GLSL_SOURCE_FILES
+	"${CMAKE_SOURCE_DIR}/shaders/*.glsl"
+)
+
+foreach(GLSL_FILE ${GLSL_SOURCE_FILES})
+	get_filename_component(FILE_NAME ${GLSL_FILE} NAME)
+	set(SPIRV "${PROJECT_BINARY_DIR}/shaders/${FILE_NAME}.spv")
+	add_custom_command(
+		OUTPUT ${SPIRV}
+		COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/shaders/"
+		COMMAND ${SPIRV_COMPILER} ${GLSL_FILE} -o ${SPIRV}
+		DEPENDS ${GLSL_FILE}
+	)
+	list(APPEND SPIRV_BINARY_FILES ${SPIRV})
+endforeach(GLSL_FILE)
+
+add_custom_target(
+	Shaders
+	DEPENDS ${SPIRV_BINARY_FILES}
+)
+
 add_custom_target(copy-shared-lib ALL 
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 	"${RYDOR_LIB_DIR}/shared"
@@ -83,4 +106,11 @@ add_custom_target(copy-shared-lib ALL
 	COMMENT "Copying shared libs..."
 )
 
-add_dependencies(${PROJECT_NAME} copy-shared-lib)
+add_dependencies(${PROJECT_NAME} copy-shared-lib Shaders)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${PROJECT_NAME}>/shaders/"
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${PROJECT_BINARY_DIR}/shaders"
+		"$<TARGET_FILE_DIR:${PROJECT_NAME}>/shaders"
+)

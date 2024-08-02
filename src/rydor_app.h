@@ -77,6 +77,8 @@ private:
 	std::vector<VkImage> swapchain_images;
 	VkFormat swapchain_image_format;
 	VkExtent2D swapchain_extent;
+	std::vector<VkImageView> swapchain_image_views;
+	VkPipelineLayout pipeline_layout;
 
 	const std::vector<const char*> validation_layers = {
 		"VK_LAYER_KHRONOS_validation"
@@ -118,6 +120,9 @@ private:
 	VkSurfaceFormatKHR choose_swapchain_surface_format(const std::vector<VkSurfaceFormatKHR>& available_formats);
 	VkPresentModeKHR choose_swap_present_mode(const std::vector<VkPresentModeKHR>& available_present_modes);
 	VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities);
+	void create_image_views();
+	void create_graphics_pipeline();
+	VkShaderModule create_shader_module(const std::vector<char>& code);
 	void main_loop();
 	void cleanup();
 };
