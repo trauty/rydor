@@ -37,6 +37,8 @@ void rydor_app::init_vulkan()
 	create_logical_device();
 	create_swapchain();
 	create_image_views();
+	create_render_pass();
+	create_graphics_pipeline();
 }
 
 void rydor_app::create_instance()
@@ -483,6 +485,26 @@ void rydor_app::create_image_views()
 			throw std::runtime_error("Failed to create image views");
 		}
 	}
+}
+
+void rydor_app::create_render_pass()
+{
+	VkAttachmentDescription color_attachment = {};
+	color_attachment.format = swapchain_image_format;
+	color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	VkAttachmentReference color_attachment_ref = {};
+	color_attachment_ref.attachment = 0;
+	color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass = {};
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 }
 
 void rydor_app::create_graphics_pipeline()

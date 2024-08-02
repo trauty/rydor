@@ -121,6 +121,7 @@ private:
 	VkPresentModeKHR choose_swap_present_mode(const std::vector<VkPresentModeKHR>& available_present_modes);
 	VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities);
 	void create_image_views();
+	void create_render_pass();
 	void create_graphics_pipeline();
 	VkShaderModule create_shader_module(const std::vector<char>& code);
 	void main_loop();
