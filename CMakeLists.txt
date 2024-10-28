@@ -16,13 +16,14 @@ find_package(Vulkan REQUIRED)
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 if(WIN32)
-	target_link_options(${PROJECT_NAME} PRIVATE -mwindows)
+	#target_link_options(${PROJECT_NAME} PRIVATE -mwindows)
+	# -Wl,-subsystem,windows
 	set_target_properties(${PROJECT_NAME}
 		PROPERTIES
-        LINK_FLAGS_DEBUG "-Xlinker /subsystem:console"
-        LINK_FLAGS_RELEASE "-Xlinker /subsystem:windows"
-        LINK_FLAGS_RELWITHDEBINFO "-Xlinker /subsystem:windows"
-        LINK_FLAGS_MINSIZEREL "-Xlinker /subsystem:windows"
+        LINK_FLAGS_DEBUG "-mconsole"
+        LINK_FLAGS_RELEASE "-mwindows"
+        LINK_FLAGS_RELWITHDEBINFO "-mwindows"
+        LINK_FLAGS_MINSIZEREL "-mwindows"
     )
 endif()
 
@@ -38,11 +39,10 @@ if(NOT EXISTS ${RYDOR_LIB_DIR} OR NOT EXISTS ${RYDOR_INCLUDE_DIR})
 endif()
 
 if(NOT EXISTS ${RYDOR_LIB_DIR}/SDL2 OR NOT EXISTS ${RYDOR_INCLUDE_DIR}/SDL2)
-	file(MAKE_DIRECTORY ${TEMP_DIR})
-	file(DOWNLOAD ${SDL2_SRC_URL} ${TEMP_DIR}/${SDL2_SRC_NAME}.tar.gz SHOW_PROGRESS)
-	execute_process(COMMAND tar -xzvf ${TEMP_DIR}/${SDL2_SRC_NAME}.tar.gz -C ${TEMP_DIR} RESULT_VARIABLE unzip_res)
-	if(NOT unzip_res EQUAL 0)
-		message(FATAL_ERROR "Failed to unzip SDL2 source package!")
+	if(NOT EXISTS ${TEMP_DIR})
+		file(MAKE_DIRECTORY ${TEMP_DIR})
+		file(DOWNLOAD ${SDL2_SRC_URL} ${TEMP_DIR}/${SDL2_SRC_NAME}.tar.gz SHOW_PROGRESS)
+		file(ARCHIVE_EXTRACT INPUT ${TEMP_DIR}/${SDL2_SRC_NAME}.tar.gz DESTINATION ${TEMP_DIR})
 	endif()
 
 	execute_process(COMMAND cmake -S ${TEMP_DIR}/${SDL2_SRC_NAME} -B ${TEMP_DIR}/${SDL2_SRC_NAME}/build 
@@ -51,7 +51,7 @@ if(NOT EXISTS ${RYDOR_LIB_DIR}/SDL2 OR NOT EXISTS ${RYDOR_INCLUDE_DIR}/SDL2)
 		-DSDL_DUMMYAUDIO:BOOL=0 -DSDL_OPENGL:BOOL=0 -DSDL_DUMMYVIDEO:BOOL=0 -DSDL_DISKAUDIO:BOOL=0 
 		-DSDL_STATIC:BOOL=0 -DSDL_OPENGLES:BOOL=0 -DSDL_ALTIVEC:BOOL=0 -DSDL2_DISABLE_INSTALL:BOOL=1
 		-DSDL_WASAPI:BOOL=0 -DCMAKE_BUILD_TYPE:STRING=Release -DSDL_AUDIO:BOOL=0 -DSDL_LIBUDEV:BOOL=0 
-		-DSDL_ASSERTIONS:STRING=auto -DSDL_TEST:BOOL=0 -DSDL2_NO_MWINDOWS:BOOL=1
+		-DSDL_ASSERTIONS:STRING=auto -DSDL_TEST:BOOL=0 -DSDL2_NO_MWINDOWS:BOOL=0
 	)
 
 	execute_process(COMMAND ninja -C ${TEMP_DIR}/${SDL2_SRC_NAME}/build)
@@ -59,8 +59,8 @@ if(NOT EXISTS ${RYDOR_LIB_DIR}/SDL2 OR NOT EXISTS ${RYDOR_INCLUDE_DIR}/SDL2)
 	file(COPY ${TEMP_DIR}/${SDL2_SRC_NAME}/build/include/SDL2 DESTINATION ${RYDOR_INCLUDE_DIR})
 	file(COPY_FILE ${TEMP_DIR}/${SDL2_SRC_NAME}/build/include-config-release/SDL2/SDL_config.h ${RYDOR_INCLUDE_DIR}/SDL2/SDL_config.h)
 	file(MAKE_DIRECTORY ${RYDOR_LIB_DIR}/SDL2)
-	file(COPY_FILE ${TEMP_DIR}/${SDL2_SRC_NAME}/build/SDL2.lib ${RYDOR_LIB_DIR}/SDL2/SDL2.lib)
-	file(COPY_FILE ${TEMP_DIR}/${SDL2_SRC_NAME}/build/SDL2main.lib ${RYDOR_LIB_DIR}/SDL2/SDL2main.lib)
+	file(COPY_FILE ${TEMP_DIR}/${SDL2_SRC_NAME}/build/libSDL2.dll.a ${RYDOR_LIB_DIR}/SDL2/libSDL2.dll.a)
+	file(COPY_FILE ${TEMP_DIR}/${SDL2_SRC_NAME}/build/libSDL2main.a ${RYDOR_LIB_DIR}/SDL2/libSDL2main.a)
 	file(COPY_FILE ${TEMP_DIR}/${SDL2_SRC_NAME}/build/SDL2.dll ${RYDOR_LIB_DIR}/shared/SDL2.dll)
 endif()	
 
@@ -69,8 +69,8 @@ if(EXISTS ${TEMP_DIR})
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE 
-	${RYDOR_LIB_DIR}/SDL2/SDL2main.lib
-	${RYDOR_LIB_DIR}/SDL2/SDL2.lib
+	${RYDOR_LIB_DIR}/SDL2/libSDL2main.a
+	${RYDOR_LIB_DIR}/SDL2/libSDL2.dll.a
 	Vulkan::Vulkan
 )
 
@@ -79,7 +79,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${RYDOR_INCLUDE_DIR} ${Vulkan
 set(SPIRV_COMPILER "$ENV{VULKAN_SDK}/Bin/glslc.exe")
 
 file(GLOB_RECURSE GLSL_SOURCE_FILES
-	"${CMAKE_SOURCE_DIR}/shaders/*.glsl"
+	"${CMAKE_SOURCE_DIR}/shaders/*.vert"
+	"${CMAKE_SOURCE_DIR}/shaders/*.frag"
 )
 
 foreach(GLSL_FILE ${GLSL_SOURCE_FILES})

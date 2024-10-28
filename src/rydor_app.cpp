@@ -107,7 +107,7 @@ bool rydor_app::check_validation_layer_support()
 
 		for (const VkLayerProperties& layer_properties : available_layers)
 		{
-			if (std::strcmp(layer_name, layer_properties.layerName) == 0)
+			if (strcmp(layer_name, layer_properties.layerName) == 0)
 			{
 				layer_found = true;
 				break;
