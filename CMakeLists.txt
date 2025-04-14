@@ -13,6 +13,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 project(rydor)
 
 include(FetchContent)
+set(FETCHCONTENT_UPDATES_DISCONNECTED OFF CACHE INTERNAL "")
 
 find_package(Vulkan REQUIRED)
 
@@ -21,8 +22,34 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
   GIT_TAG release-3.2.8
   GIT_SHALLOW ON
+  EXCLUDE_FROM_ALL
 )
-FetchContent_MakeAvailable(SDL3)
+
+set(SDL_AUDIO_DEFAULT OFF CACHE INTERNAL "")
+set(SDL_GPU_DEFAULT OFF CACHE INTERNAL "")
+set(SDL_RENDER_DEFAULT OFF CACHE INTERNAL "")
+set(SDL_CAMERA_DEFAULT OFF CACHE INTERNAL "")
+set(SDL_JOYSTICK_DEFAULT OFF CACHE INTERNAL "")
+set(SDL_HAPTIC_DEFAULT OFF CACHE INTERNAL "")
+set(SDL_HIDAPI_DEFAULT OFF CACHE INTERNAL "")
+set(SDL_POWER_DEFAULT OFF CACHE INTERNAL "")
+set(SDL_SENSOR_DEFAULT OFF CACHE INTERNAL "")
+set(SDL_DIALOG_DEFAULT OFF CACHE INTERNAL "")
+
+FetchContent_Declare(
+  cglm
+  GIT_REPOSITORY https://github.com/recp/cglm.git
+  GIT_TAG v0.9.6
+  GIT_SHALLOW ON
+  EXCLUDE_FROM_ALL
+)
+
+set(CGLM_SHARED OFF CACHE INTERNAL "")
+set(CGLM_STATIC OFF CACHE INTERNAL "")
+set(CGLM_USE_C99 OFF CACHE INTERNAL "")
+set(CGLM_USE_TEST OFF CACHE INTERNAL "")
+
+FetchContent_MakeAvailable(SDL3 cglm)
 
 add_executable(
 	${PROJECT_NAME}
@@ -45,6 +72,7 @@ endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE 
 	SDL3::SDL3
 	Vulkan::Vulkan
+	cglm_headers
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/src)
