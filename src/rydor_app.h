@@ -78,7 +78,9 @@ private:
 	VkFormat swapchain_image_format;
 	VkExtent2D swapchain_extent;
 	std::vector<VkImageView> swapchain_image_views;
+	VkRenderPass render_pass;
 	VkPipelineLayout pipeline_layout;
+	VkPipeline graphics_pipeline;
 
 	const std::vector<const char*> validation_layers = {
 		"VK_LAYER_KHRONOS_validation"
