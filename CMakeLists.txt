@@ -77,7 +77,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/src)
 
+if (WIN32)
 set(SPIRV_COMPILER "$ENV{VULKAN_SDK}/Bin/glslc.exe")
+elseif(UNIX)
+set(SPIRV_COMPILER "$ENV{VULKAN_SDK}/bin/glslc")
+endif()
 
 file(GLOB_RECURSE GLSL_SOURCE_FILES
 	"${CMAKE_SOURCE_DIR}/shaders/*.vert"
