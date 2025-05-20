@@ -5,7 +5,7 @@
 #include <vulkan/vulkan.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
-#include <cglm/cglm.h>
+//#include <cglm/cglm.h>
 
 #include "defines.h"
 
@@ -215,7 +215,7 @@ bool is_device_suitable(const VkPhysicalDevice& device)
 	vkGetPhysicalDeviceProperties(device, &device_props);
 	vkGetPhysicalDeviceFeatures(device, &device_features);
 
-	return device_props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && device_features.geometryShader;
+	return device_props.deviceType == device_features.geometryShader; //VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && 
 }
 
 void pick_physical_device()
