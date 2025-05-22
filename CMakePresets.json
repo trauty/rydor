@@ -6,7 +6,7 @@
             "displayName": "Win/Linux Debug",
             "description": "Using compilers: C = clang.exe, CXX = clang++.exe",
             "generator": "Ninja",
-            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
                 "CMAKE_C_COMPILER": "clang",
@@ -19,7 +19,7 @@
             "displayName": "Win/Linux Release",
             "description": "Using compilers: C = clang.exe, CXX = clang++.exe",
             "generator": "Ninja",
-            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
                 "CMAKE_C_COMPILER": "clang",
