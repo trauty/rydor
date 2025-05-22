@@ -91,5 +91,6 @@
         "string_view": "cpp",
         "text_encoding": "cpp",
         "cinttypes": "cpp"
-    }
+    },
+    "cmake.useCMakePresets": "always"
 }

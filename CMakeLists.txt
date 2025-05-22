@@ -15,25 +15,6 @@ project(rydor)
 find_package(Vulkan REQUIRED)
 
 # FetchContent_Declare(
-#   SDL3
-#   GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-#   GIT_TAG release-3.2.8
-#   GIT_SHALLOW ON
-#   EXCLUDE_FROM_ALL
-# )
-
-# set(SDL_AUDIO_DEFAULT OFF CACHE INTERNAL "")
-# set(SDL_GPU_DEFAULT OFF CACHE INTERNAL "")
-# set(SDL_RENDER_DEFAULT OFF CACHE INTERNAL "")
-# set(SDL_CAMERA_DEFAULT OFF CACHE INTERNAL "")
-# set(SDL_JOYSTICK_DEFAULT OFF CACHE INTERNAL "")
-# set(SDL_HAPTIC_DEFAULT OFF CACHE INTERNAL "")
-# set(SDL_HIDAPI_DEFAULT OFF CACHE INTERNAL "")
-# set(SDL_POWER_DEFAULT OFF CACHE INTERNAL "")
-# set(SDL_SENSOR_DEFAULT OFF CACHE INTERNAL "")
-# set(SDL_DIALOG_DEFAULT OFF CACHE INTERNAL "")
-
-# FetchContent_Declare(
 #   cglm
 #   GIT_REPOSITORY https://github.com/recp/cglm.git
 #   GIT_TAG v0.9.6
@@ -46,8 +27,6 @@ find_package(Vulkan REQUIRED)
 # set(CGLM_USE_C99 OFF CACHE INTERNAL "")
 # set(CGLM_USE_TEST OFF CACHE INTERNAL "")
 
-# FetchContent_MakeAvailable(SDL3 cglm)
-
 add_executable(
 	${PROJECT_NAME}
 	src/main.cpp
@@ -56,7 +35,22 @@ add_executable(
 
 include(cmake/CPM.cmake)
 
-CPMAddPackage("gh:libsdl-org/SDL#release-3.2.14")
+CPMAddPackage(
+	URI "gh:libsdl-org/SDL#release-3.2.14"
+	OPTIONS "SDL_AUDIO_DEFAULT OFF" 
+	"SDL_GPU_DEFAULT OFF"
+	"SDL_RENDER_DEFAULT OFF"
+	"SDL_CAMERA_DEFAULT OFF"
+	"SDL_JOYSTICK_DEFAULT OFF"
+	"SDL_HAPTIC_DEFAULT OFF"
+	"SDL_POWER_DEFAULT OFF"
+	"SDL_SENSOR_DEFAULT OFF"
+	"SDL_DIALOG_DEFAULT OFF"
+	"SDL_TEST_LIBRARY OFF"
+	"SDL_OPENGLES OFF"
+	"SDL_OPENGL OFF"
+	"SDL_DIRECTX OFF"
+)
 
 if(WIN32)
 	#target_link_options(${PROJECT_NAME} PRIVATE -mwindows)
