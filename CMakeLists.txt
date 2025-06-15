@@ -3,12 +3,14 @@ cmake_minimum_required(VERSION 3.25)
 set(CMAKE_GENERATOR "Ninja")
 set(CMAKE_C_COMPILER "clang")
 set(CMAKE_CXX_COMPILER "clang++")
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 #set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  set(LINUX true)
+endif()
 
 project(rydor)
 
@@ -31,7 +33,10 @@ add_executable(
 	${PROJECT_NAME}
 	src/main.cpp
 	src/utils.cpp
+	src/log/log.cpp
 )
+
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 include(cmake/CPM.cmake)
 
@@ -52,7 +57,11 @@ CPMAddPackage(
 	"SDL_DIRECTX OFF"
 )
 
-if(WIN32)
+CPMAddPackage(
+	URI "gh:fmtlib/fmt#11.2.0"
+)
+
+if (WIN32)
 	#target_link_options(${PROJECT_NAME} PRIVATE -mwindows)
 	# -Wl,-subsystem,windows
 	set_target_properties(${PROJECT_NAME}
@@ -64,16 +73,26 @@ if(WIN32)
     )
 endif()
 
+if (WIN32)
 target_link_libraries(${PROJECT_NAME} PRIVATE 
 	SDL3::SDL3
 	Vulkan::Vulkan
+	fmt
+	kernel32
 )
+elseif (LINUX)
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+	SDL3::SDL3
+	Vulkan::Vulkan
+	fmt
+)
+endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/src)
 
 if (WIN32)
 set(SPIRV_COMPILER "$ENV{VULKAN_SDK}/Bin/glslc.exe")
-elseif(UNIX)
+elseif (LINUX)
 set(SPIRV_COMPILER "$ENV{VULKAN_SDK}/bin/glslc")
 endif()
 

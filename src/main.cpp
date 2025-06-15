@@ -8,6 +8,7 @@
 //#include <cglm/cglm.h>
 
 #include "defines.h"
+#include "log/log.h"
 
 const i32 WINDOW_WIDTH = 1280;
 const i32 WINDOW_HEIGHT = 720;
@@ -17,9 +18,9 @@ const std::vector<const char*> validation_layers = {
 };
 
 #ifdef NDEBUG
-const bool enable_validation_layers = false;
+constexpr bool enable_validation_layers = false;
 #else
-const bool enable_validation_layers = true;
+constexpr bool enable_validation_layers = true;
 #endif
 
 SDL_Window* window;
@@ -35,7 +36,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback
 	void* p_user_data
 )
 {
-	std::cerr << "Validation layer: " << p_callback_data->pMessage << "\n";
+	RYDOR_LOG_INFO("RENDER", "{}", p_callback_data->pMessage);
 	return VK_FALSE;
 }
 
@@ -154,10 +155,10 @@ bool create_instance()
 	{ 
 		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
 		.pApplicationName = "rydor",
-		.applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0),
+		.applicationVersion = VK_MAKE_API_VERSION(0, 1, 1, 0),
 		.pEngineName = "rydor",
-		.engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0),
-		.apiVersion = VK_API_VERSION_1_0
+		.engineVersion = VK_MAKE_API_VERSION(0, 1, 1, 0),
+		.apiVersion = VK_API_VERSION_1_1
 	};
 
 	VkInstanceCreateInfo instance_create_info 
@@ -199,10 +200,10 @@ bool create_instance()
 	std::vector<VkExtensionProperties> extension_props(extension_count);
 	vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, extension_props.data());
 
-	std::cout << "Available extensions:\n";
+	RYDOR_LOG_INFO("RENDER", "Available extensions:");
 	for (const VkExtensionProperties& extension : extension_props)
 	{
-		std::cout << '\t' << extension.extensionName << '\n';
+		RYDOR_LOG_INFO("RENDER | VULKAN EXTENSION", "\t{}", extension.extensionName);
 	}
 
 	return true;
@@ -246,6 +247,14 @@ void pick_physical_device()
 		std::cout << "No GPUs with appropriate Vulkan support found!\n";
 		return;
 	}
+}
+
+void init_logging()
+{
+	rydor::log::set_level(rydor::log::TRACE);
+	rydor::log::set_max_file_size(5 * 1024 * 1024);
+	rydor::log::to_file("logs");
+	rydor::log::start();
 }
 
 void init_window()
@@ -297,6 +306,7 @@ void cleanup()
 
 void run()
 {
+	init_logging();
 	init_window();
 	init_vulkan();
 	main_loop();

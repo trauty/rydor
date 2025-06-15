@@ -1,6 +1,7 @@
 #pragma once
 
 #include <math.h>
+#include <stdint.h>
 
 typedef unsigned char u8;
 typedef unsigned short u16;
@@ -25,20 +26,36 @@ typedef int64_t i64_t;
 typedef float f32;
 typedef double f64;
 
-static_assert(sizeof(u8) == 1, "STATIC ASSERT FAILED: u8 not 1 byte wide");
-static_assert(sizeof(u16) == 2, "STATIC ASSERT FAILED: u16 not 2 byte wide");
-static_assert(sizeof(u32) == 4, "STATIC ASSERT FAILED: u32 not 4 byte wide");
-static_assert(sizeof(u64) == 8, "STATIC ASSERT FAILED: u64 not 8 byte wide");
+static_assert(sizeof(u8_t) == 1, "STATIC ASSERT FAILED: u8_t not 1 byte wide");
+static_assert(sizeof(u16_t) == 2, "STATIC ASSERT FAILED: u16_t not 2 byte wide");
+static_assert(sizeof(u32_t) == 4, "STATIC ASSERT FAILED: u32_t not 4 byte wide");
+static_assert(sizeof(u64_t) == 8, "STATIC ASSERT FAILED: u64_t not 8 byte wide");
 
-static_assert(sizeof(i8) == 1, "STATIC ASSERT FAILED: i8 not 1 byte wide");
-static_assert(sizeof(i16) == 2, "STATIC ASSERT FAILED: i16 not 2 byte wide");
-static_assert(sizeof(i32) == 4, "STATIC ASSERT FAILED: i32 not 4 byte wide");
-static_assert(sizeof(i64) == 8, "STATIC ASSERT FAILED: i64 not 8 byte wide");
+static_assert(sizeof(i8_t) == 1, "STATIC ASSERT FAILED: i8_t not 1 byte wide");
+static_assert(sizeof(i16_t) == 2, "STATIC ASSERT FAILED: i16_t not 2 byte wide");
+static_assert(sizeof(i32_t) == 4, "STATIC ASSERT FAILED: i32_t not 4 byte wide");
+static_assert(sizeof(i64_t) == 8, "STATIC ASSERT FAILED: i64_t not 8 byte wide");
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
+#define RYDOR_PLATFORM_WIN 1
+#ifndef _WIN64
+#error "This application only works with 64-bit Windows."
+#endif
+
+#elif defined(__linux__) || defined(__gnu_linux__)
+#define RYDOR_PLATFORM_LINUX 1
 #if defined(__ANDROID__)
-#define VK_USE_PLATFORM_ANDROID_KHR
-#elif defined(__linux__)
-#define VK_USE_PLATFORM_XLIB_KHR
-#elif defined(_WIN64)
-#define VK_USE_PLATFORM_WIN32_KHR
+#define RYDOR_PLATFORM_ANDROID 1
+#endif
+
+#elif defined(__unix__)
+#define RYDOR_PLATFORM_UNIX 1
+
+#elif defined(_POSIX_VERSION)
+#define RYDOR_PLATFORM_POSIX 1
+
+#endif
+
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #endif
